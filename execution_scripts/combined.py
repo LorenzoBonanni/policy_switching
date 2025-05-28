@@ -36,7 +36,7 @@ def combined(config_dict):
     wandb_name = f'{config_dict["algo_name"]}-{config_dict["env_id"]}-seed_{config_dict["seed"]}-{config_dict["id"]}'
     config_dict["wandb_name"] = wandb_name
 
-   #wandb_init(config_dict)
+    wandb_init(config_dict)
 
     ensemble_num = config_dict['ensemble_num']
     config_dict['critic_ensemble_num'] = ensemble_num

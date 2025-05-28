@@ -8,8 +8,7 @@ Execute:
 #####
 you can use a modern version of gym with d4rl but need to modify
 
-file name: ~/miniconda/envs/diffenv/lib/python3.10/site-packages/pybullet_envs/__init__.py
-
+file name: ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/pybullet_envs/__init__.py
 functions edited:
     (func) register: imported registry object is now a dict with keys corresponding to id so (modification on line 6)
             
@@ -23,7 +22,7 @@ functions edited:
 ##########
 edit the Class NormalizedBoxEnv in d4rl to be compatible with new gym (outputting a variable for trunc)
 
-file name: ~/d4rl/d4rl/utils/wrappers.py
+file name: ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/d4rl/utils/wrappers.py
 
 Class edited:
     (class (Normalized Box Env), method) step: modified output on lines 165 and 168 to assign a value to trunc
@@ -50,7 +49,7 @@ code:
         return observation, reward, terminated, truncated, info
 """
 
-file name: ~/miniconda3/envs/diffenv/lib/python3.10/site-packages/gym/wrappers/time_limit.py
+file name:  ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/gym/wrappers/time_limit.py
 ############
 
 4.)
@@ -63,19 +62,19 @@ code:
     mujoco_env.MujocoEnv.__init__(self, file_path, 5, observation_space=obs_space)
 """
 
-filename: ~/miniconda3/envs/diffenv/lib/python3.10/site-packages/d4rl/locomotion/ant.py
+filename: ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/d4rl/locomotion/ant.py
 
 (also need to import spaces "from gym import utils, spaces")
 #########
 
 5.)
 #######
-Comment out lines 61-68 in filename: ~/miniconda3/envs/diffenv/lib/python3.10/site-packages/gym/envs/mujoco/mujoco_env.py
+Comment out lines 61-68 in filename: ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/gym/envs/mujoco/mujoco_env.py
 ######
 
 6.)
 #####
-In file: miniconda3/envs/diffenv/lib/python3.10/site-packages/d4rl/locomotion/ant.py
+In file: ~/miniconda3/envs/rlenv/lib/python3.10/site-packages/d4rl/locomotion/ant.py
 
 change: "self.np_random.randn(self.model.nv)"
 to: "self.np_random.random(self.model.nv)"

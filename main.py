@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
 
     performance_eval_config = {'num_evals':10,    ## how many times to evaluate when testing performance of policy
-                               'eval_counter':10000, ##after how many steps of learning to evaluate offline
+                               'eval_counter':10_000, ##after how many steps of learning to evaluate offline
                                }
 
     training_config = {'num_env_steps':1000001,
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         config_dict['normalise_state'] = False
 
         if config_dict['offline']:
-            config_dict['eval_counter'] = 10000
+            config_dict['eval_counter'] = 10_000
 
         config_dict['task'] = 'ant'
 
@@ -97,12 +97,14 @@ if __name__ == '__main__':
     np.random.seed(seed)
 
 
+    # td3_n_offline(config_dict)
+    # bc_offline(config_dict)
+    combined(config_dict)
+
+    # Train Online
+    config_dict['offline'] = False
     td3_n_offline(config_dict)
-
-   #bc_offline(config_dict)
-
-   #combined(config_dict)
+    combined(config_dict)
     
-   #plot_online_return(config_dict)
-   #plot_online_std(config_dict)
-
+plot_online_return(config_dict)
+plot_online_std(config_dict)

@@ -12,6 +12,10 @@ def plot_online_return(config_dict,ma=1):
     figures_path = f'online_plots/avg_return_{config_dict["env_id"]}'
     results_dict = {}
 
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
+    if not os.path.exists(figures_path):
+        os.makedirs(figures_path)
 
     idx = np.arange(0,config_dict['online_steps']+config_dict['eval_counter'],config_dict['eval_counter'])
 

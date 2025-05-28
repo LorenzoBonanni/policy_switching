@@ -47,24 +47,28 @@ class Agent(ContinuousBaseAgent):
         loss = -log_prob.sum()
 
         self.model_optimiser.zero_grad()
+
+        self.log_dict['model_loss'] = loss.item()
+
         loss.backward()
         self.model_optimiser.step()
+        return loss
 
     def learn(self, sample_range=None, **kwargs):
 
         self.total_it += 1
         if self.replay_buffer.mem_cntr < self.replay_buffer.batch_size:
-            return
+            return None
 
         *samples, batch_idx = self.replay_buffer.sample(rng=self.rng,
                                                         sample_range=sample_range,
                                                         batch_size=self.batch_size)
 
-        self.update_model(samples)
+        loss = self.update_model(samples)
 
         if self.total_it%100000 == 0:
             self.save_model()
-
+        return loss
 
     def save_model(self):
         

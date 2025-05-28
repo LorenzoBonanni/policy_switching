@@ -7,8 +7,8 @@ def td3_n_offline(config_dict):
     env = config_dict['env']
     dataset = get_dataset(env)
 
-    lr_info = {'critic_lr':5e-4, 
-               'actor_lr':5e-4, 
+    lr_info = {'critic_lr':5e-3, 
+               'actor_lr':5e-3, 
                'tau':1e-3, 
                }
 
@@ -29,7 +29,7 @@ def td3_n_offline(config_dict):
     wandb_name = f'{config_dict["algo_name"]}-{config_dict["env_id"]}-seed_{config_dict["seed"]}-{config_dict["id"]}'
     config_dict["wandb_name"] = wandb_name
 
-   #wandb_init(config_dict)
+    wandb_init(config_dict)
 
     ensemble_num = config_dict['ensemble_num']
     config_dict['critic_ensemble_num'] = ensemble_num

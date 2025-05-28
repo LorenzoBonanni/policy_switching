@@ -1,7 +1,7 @@
 from rl_algos.single_agent.BC.agent import Agent
 from rl_algos.single_agent.Gaussian_BC.agent import Agent as GaussianAgent
 
-from utils.misc import get_dataset
+from utils.misc import get_dataset, wandb_init
 
 def bc_offline(config_dict, train=True):
     env = config_dict['env']
@@ -16,7 +16,6 @@ def bc_offline(config_dict, train=True):
     
     config_dict['ensemble_num'] = 1
     config_dict['critic_factor'] = 1
-
     config_dict['eval_counter'] = 100000
 
     if config_dict['gaussian_bc']:
@@ -33,6 +32,15 @@ def bc_offline(config_dict, train=True):
                       dataset=dataset,
                       **config_dict
                       )
+
+    if 'ant' in config_dict['env_id']:
+        config_dict['wandb_group'] = config_dict['algo_name']+'-ant'
+    else:
+        config_dict['wandb_group'] = config_dict['algo_name']+'-mujoco'
+    
+    wandb_name = f'{config_dict["algo_name"]}-{config_dict["env_id"]}-seed_{config_dict["seed"]}-{config_dict["id"]}'
+    config_dict["wandb_name"] = wandb_name
+    wandb_init(config_dict)
 
     if train:
         agent.train_offline(config_dict)

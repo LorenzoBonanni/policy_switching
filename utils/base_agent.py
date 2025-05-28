@@ -114,7 +114,7 @@ class BaseAgent(ABC):
                                                     config_dict=config_dict)
         
             if self.algo_name == 'combined':
-                avg_return,avg_bc, mean_std = avg_results
+                avg_return, avg_bc, mean_std = avg_results
                 agent_return_list.append(avg_return)
                 agent_bc_list.append(avg_bc)
                 norm_return = env.get_normalized_score(avg_return)*100
@@ -141,6 +141,15 @@ class BaseAgent(ABC):
         print(f'Min normalised return: {100*env.get_normalized_score(min_return)}')
         print(f'Max normalised return: {100*env.get_normalized_score(max_return)}')
         print(f'Std normalised return: {100*env.get_normalized_score(std_return)}')
+
+        if wandb.run is not None:
+            wandb.log({'avg_return':avg_return,
+                       'norm_avg_return':norm_avg_return,
+                       'std_return':std_return,
+                       'min_return':100*env.get_normalized_score(min_return),
+                       'max_return':100*env.get_normalized_score(max_return),
+                       'avg_bc_use':avg_bc
+                       },step=self.total_it)
 
         print(f'\nAlgo has an ensemble of {self.ensemble_num} actors and {self.critic_factor} critics per actor')
 
@@ -249,7 +258,7 @@ class BaseAgent(ABC):
             while i < config_dict['num_env_steps']:
 
                 loss = self.learn(dep_targ=config_dict['dep_targ'])
-                if wandb.run is not None and loss[1] != None:
+                if wandb.run is not None and loss != None:
                     wandb.log(self.log_dict,step=self.total_it)
 
 
