@@ -1,9 +1,11 @@
 import os, sys
+import gym
 import torch
 import numpy as np
 import d4rl
 import h5py
 import ntpath
+from tqdm import tqdm
 import wandb
 
 def wandb_init(config_dict):
@@ -13,7 +15,7 @@ def wandb_init(config_dict):
             group=config_dict['wandb_group'],
             name=config_dict['wandb_name']
             )
-    wandb.run.save()
+    # wandb.run.save()
 
 
 def soft_update(target,source,tau):
@@ -29,9 +31,8 @@ def soft_update(target,source,tau):
     target.load_state_dict(target_params_dict)
 
 def get_dataset(env):
-
-    path = os.path.expanduser('~/.d4rl/datasets')
-    file_name = ntpath.basename(env.spec.kwargs['dataset_url'])
+    path = os.path.expandvars('$D4RL_DATASET_DIR/datasets')
+    file_name = ntpath.basename(env.spec.kwargs.get('dataset_url',''))
     filepath = os.path.join(path,file_name)
     if os.path.isfile(filepath) and ('pen' not in env.spec.name and 'maze' not in env.spec.name):
 
@@ -114,3 +115,75 @@ def get_returns_to_go(agent):
 
     return torch.tensor(returns,dtype=torch.float,device=agent.device)
 
+def get_keys(h5file):
+    keys = []
+
+    def visitor(name, item):
+        if isinstance(item, h5py.Dataset):
+            keys.append(name)
+
+    h5file.visititems(visitor)
+    return keys
+
+class CustomDatasetWrapper(gym.Wrapper):
+    def __init__(self, env, dataset_path, d4rl_name):
+        super().__init__(env)
+        self.dataset_path = dataset_path
+        self.d4rl_name = d4rl_name
+
+    def get_dataset(self, **kwargs):
+        data_dict = {}
+        with h5py.File(self.dataset_path, 'r') as dataset_file:
+            print(f"Baseline Performance: {dataset_file['metadata'].attrs['eval_avg_return']:.3f}±{dataset_file['metadata'].attrs.get('eval_std_return', 0.0):.3f} on {dataset_file['metadata'].attrs['eval_episodes']} episodes")
+            print("Deterministic Policy: ", dataset_file['metadata'].attrs.get('deterministic_policy', None))
+            for k in tqdm(get_keys(dataset_file), desc="load datafile"):
+                try:  # first try loading as an array
+                    data_dict[k] = dataset_file[k][:]
+                except ValueError as e:  # try loading as a scalar
+                    data_dict[k] = dataset_file[k][()]
+
+        # Run a few quick sanity checks
+        for key in ['observations', 'actions', 'rewards', 'terminals']:
+            assert key in data_dict, 'Dataset is missing key %s' % key
+        N_samples = data_dict['observations'].shape[0]
+        if self.observation_space.shape is not None:
+            assert data_dict['observations'].shape[1:] == self.observation_space.shape, \
+                'Observation shape does not match env: %s vs %s' % (
+                    str(data_dict['observations'].shape[1:]), str(self.observation_space.shape))
+        assert data_dict['actions'].shape[1:] == self.action_space.shape, \
+            'Action shape does not match env: %s vs %s' % (
+                str(data_dict['actions'].shape[1:]), str(self.action_space.shape))
+        if data_dict['rewards'].shape == (N_samples, 1):
+            data_dict['rewards'] = data_dict['rewards'][:, 0]
+        assert data_dict['rewards'].shape == (N_samples,), 'Reward has wrong shape: %s' % (
+            str(data_dict['rewards'].shape))
+        if data_dict['terminals'].shape == (N_samples, 1):
+            data_dict['terminals'] = data_dict['terminals'][:, 0]
+        assert data_dict['terminals'].shape == (N_samples,), 'Terminals has wrong shape: %s' % (
+            str(data_dict['rewards'].shape))
+        return data_dict
+
+        # with h5py.File(self.dataset_path, 'r') as f:
+        #     print(f"Baseline Performance: {f['metadata'].attrs['eval_avg_return']:.3f}±{f['metadata'].attrs.get('eval_std_return', 0.0):.3f} on {f['metadata'].attrs['eval_episodes']} episodes")
+        #     print("Deterministic Policy: ", f['metadata'].attrs.get('deterministic_policy', None))
+        #     dataset = {
+        #         'observations': np.array(f['observations']),
+        #         'actions': np.array(f['actions']),
+        #         'rewards': np.array(f['rewards']),
+        #         'terminals': np.array(f['terminals']),
+        #         'timeouts': np.array(f.get('timeouts', np.zeros_like(f['terminals'])))
+        #     }
+
+        # # Add next_observations if not present
+        # if 'next_observations' not in f:
+        #     dataset['next_observations'] = np.concatenate([
+        #         dataset['observations'][1:],
+        #         dataset['observations'][-1:]
+        #     ], axis=0)
+        # else:
+        #     dataset['next_observations'] = np.array(f['next_observations'])
+
+        # return dataset
+    
+    def get_normalized_score(self, score):
+        return score / 100.0

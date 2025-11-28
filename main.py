@@ -1,11 +1,35 @@
+from copy import deepcopy
+import os
+import pandas as pd
 import torch
 import numpy as np
 import gym
 import time, uuid
 from execution_scripts import td3_n_offline, bc_offline, combined
 
+from utils.misc import CustomDatasetWrapper
 from utils.plotting_scripts import plot_online_return, plot_online_std
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--combined', action='store_true', help='If set, run combined training')
+parser.add_argument('--env_id', type=str, default='hopper_custom-v2#10', help='Environment ID')
+parser.add_argument('--seed', type=int, default=0, help='Random seed')
+
+args = parser.parse_args()
+
+def evaluate(config_dict, agent):
+    env = config_dict['env']
+    num_evals = config_dict.get('num_evals', 10)
+
+    returns = []
+    for _ in range(num_evals):
+        total_reward, *_ = agent._evaluate_performance(env=env, config_dict=config_dict, iteration=None)
+        returns.append(total_reward)
+    avg_return = np.mean(returns)
+    std_return = np.std(returns)
+    print(f"Evaluation over {num_evals} episodes: {avg_return:.3f} ± {std_return:.3f}")
+    return returns
 
 if __name__ == '__main__':
     model_info = {'layers':[256,256,256], ##base layer model spec
@@ -46,12 +70,31 @@ if __name__ == '__main__':
     machine_config = {'n_processors':2, 
                       'device':'cuda:0' if torch.cuda.is_available() else 'cpu',}
 
-    env_id = 'halfcheetah-medium-v2'
+    # env_id = 'halfcheetah-medium-v2'
+    env_id = args.env_id
    #env_id = 'antmaze-umaze-diverse-v2'
 
-    config_dict = {'env':gym.make(env_id),
+    if 'custom' in env_id:
+        # hopper_custom-v2#10
+        name, ntrj = env_id.split('#')
+        task_name = deepcopy(name)
+        name_dict = {
+            'pendulum_custom-v1': ('Pendulum-v1', 'pendulum-medium-v1'),
+            'hopper_custom-v2': ('Hopper-v2', 'hopper-medium-v2')
+        }
+        env_name, d4rl_name = name_dict[name]
+        env = gym.make(env_name)
+        env = CustomDatasetWrapper(
+            env,
+            f'{os.environ.get("D4RL_DATASET_DIR")}/datasets/{task_name}_dataset_{ntrj}.hdf5',
+            d4rl_name
+        )
+    else:
+        env = gym.make(env_id)
+
+    config_dict = {'env':env,
                    'hash_id':str(hash(time.time())),
-                   'seed':0,
+                   'seed':args.seed,
                    'env_id':env_id,
                    'gamma':0.99,
                    'train_model':False,
@@ -96,15 +139,24 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
     np.random.seed(seed)
 
+    if not args.combined:
+        td3_n_offline(config_dict)
+        bc_offline(config_dict)
+    else:
+        agent = combined(config_dict)
+        config_dict['num_evals'] = 50
+        ret = evaluate(config_dict, agent)
+        algo_name = 'switch'
+        out_fname = f"{algo_name}-returns_{ntrj}_{args.seed}.csv"
+        df = pd.DataFrame({"return": np.asarray(ret)})
+        RESULTS_DIR = os.path.expandvars("$MOREL_OUTPUT_DIR")
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        df.to_csv(RESULTS_DIR +'/'+ out_fname, index=False)
 
+    # # Train Online
+    # config_dict['offline'] = False
     # td3_n_offline(config_dict)
-    # bc_offline(config_dict)
-    combined(config_dict)
-
-    # Train Online
-    config_dict['offline'] = False
-    td3_n_offline(config_dict)
-    combined(config_dict)
+    # combined(config_dict)
     
-plot_online_return(config_dict)
-plot_online_std(config_dict)
+# plot_online_return(config_dict)
+# plot_online_std(config_dict)

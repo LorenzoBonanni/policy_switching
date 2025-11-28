@@ -176,3 +176,5 @@ models/*
 online_plot_files/*
 online_plots/*
 wandb/
+.vscode/*
+*.out

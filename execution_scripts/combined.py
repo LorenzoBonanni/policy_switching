@@ -53,6 +53,5 @@ def combined(config_dict):
         agent.train_offline(config_dict)
     else:
         agent.train_online(config_dict)
-
-
-
+    
+    return agent
