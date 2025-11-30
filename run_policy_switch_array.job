@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=ps_array
+#SBATCH --array=0-20%2                  # <-- set to: (#envs * #seeds) - 1
+#SBATCH --mem 8G
+#SBATCH --cpus-per-gpu 8
+#SBATCH --gres gpu:1
+#SBATCH --partition=long
+
+# --------------------------------------------------
+# 1. Conda environment
+# --------------------------------------------------
+source /home/lbonanni/miniconda3/etc/profile.d/conda.sh
+conda deactivate
+conda activate rlenv
+cd /home/lbonanni/policy_switching
+
+# --------------------------------------------------
+# 2. Define environments and seeds
+# --------------------------------------------------
+envs=(
+    "hopper_custom-v2#10"
+    "hopper_custom-v2#50"
+    "hopper_custom-v2#100"
+    "hopper_custom-v2#500"
+    "hopper_custom-v2#1000"
+    "hopper_custom-v2#2000"
+    "hopper_custom-v2#5000"
+)
+
+seeds=(0 1 2)
+
+num_envs=${#envs[@]}
+num_seeds=${#seeds[@]}
+
+# total_jobs = num_envs * num_seeds
+# SLURM_ARRAY_TASK_ID ∈ [0, total_jobs-1]
+
+task_id=$SLURM_ARRAY_TASK_ID
+
+env_idx=$(( task_id / num_seeds ))
+seed_idx=$(( task_id % num_seeds ))
+
+export ENV_NAME=${envs[$env_idx]}
+export SEED=${seeds[$seed_idx]}
+
+# --------------------------------------------------
+# 4. Run policy switching pipeline
+# --------------------------------------------------
+python main.py --env_id ${ENV_NAME} --seed ${SEED}
+python main.py --combined --env_id ${ENV_NAME} --seed ${SEED}

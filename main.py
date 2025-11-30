@@ -72,6 +72,7 @@ if __name__ == '__main__':
 
     # env_id = 'halfcheetah-medium-v2'
     env_id = args.env_id
+    print("Env ID:", env_id)
    #env_id = 'antmaze-umaze-diverse-v2'
 
     if 'custom' in env_id:
