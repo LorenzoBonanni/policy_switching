@@ -29,10 +29,11 @@ class Agent(BaseAgent):
                                   'critic_final_activation':'',
                                   }
 
-        if self.gaussian_bc:
-            self.bc_agent = GBCAgent(obs_dims=obs_dims, action_dims=action_dims, **kwargs)
-        else:
-            self.bc_agent = BCAgent(obs_dims=obs_dims, action_dims=action_dims, **kwargs)
+        if kwargs.get('baseline', None) is None:
+            if self.gaussian_bc:
+                self.bc_agent = GBCAgent(obs_dims=obs_dims, action_dims=action_dims, **kwargs)
+            else:
+                self.bc_agent = BCAgent(obs_dims=obs_dims, action_dims=action_dims, **kwargs)
 
                     
         
@@ -290,3 +291,33 @@ class Agent(BaseAgent):
 
         return loss
 
+class AgentBaseline(Agent):
+
+    def __init__(self, obs_dims, action_dims, algo_name='combined',**kwargs):
+
+        super().__init__(obs_dims=obs_dims,action_dims=action_dims,
+                        algo_name=algo_name,**kwargs)
+
+        self.gaussian_bc = kwargs.get('gaussian_bc',True)
+
+        self.agent = TD3Agent(obs_dims=obs_dims, action_dims=action_dims, **kwargs)
+        
+        kwargs['model_info'] = {'layers':[256,256,256],
+                                  'hidden_activation':'ReLU', 
+                                  'critic_final_activation':'',
+                                  }
+
+        self.baseline = kwargs.get('baseline')
+        
+        self.total_it = 0
+    
+    def choose_bc_action(self, state, **kwargs):
+        if len(state.shape) > 2:
+            new_state = state.squeeze(0).squeeze(0)
+            
+        unnorm_state = new_state * self.replay_buffer.std + self.replay_buffer.mean
+        action, *_ = self.baseline.get_action(unnorm_state, deterministic=True)
+
+        return {
+            'action': action,
+        }

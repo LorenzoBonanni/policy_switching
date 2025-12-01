@@ -90,7 +90,7 @@ class BaseAgent(ABC):
 
         if self.algo_name == 'combined' and not online:
             self.agent.load_model(iter_no=config_dict['num_env_steps']-1)
-            if config_dict['policy_stitch']:
+            if config_dict['policy_stitch'] and config_dict.get('baseline', None) is None:
                 self.bc_agent.load_model(iter_no=config_dict['num_env_steps']-1)
 
         env = config_dict['env']

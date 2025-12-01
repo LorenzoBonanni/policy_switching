@@ -6,6 +6,7 @@ import numpy as np
 import gym
 import time, uuid
 from execution_scripts import td3_n_offline, bc_offline, combined
+from torch.package.package_importer import PackageImporter
 
 from utils.misc import CustomDatasetWrapper
 from utils.plotting_scripts import plot_online_return, plot_online_std
@@ -15,6 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--combined', action='store_true', help='If set, run combined training')
 parser.add_argument('--env_id', type=str, default='hopper_custom-v2#10', help='Environment ID')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
+parser.add_argument('--baseline', action='store_true', help='If set, use baseline policy')
 
 args = parser.parse_args()
 
@@ -24,7 +26,7 @@ def evaluate(config_dict, agent):
 
     returns = []
     for _ in range(num_evals):
-        total_reward, *_ = agent._evaluate_performance(env=env, config_dict=config_dict, iteration=None)
+        total_reward, bc_steps, total_steps = agent._evaluate_performance(env=env, config_dict=config_dict, iteration=None)
         returns.append(total_reward)
     avg_return = np.mean(returns)
     std_return = np.std(returns)
@@ -70,6 +72,7 @@ if __name__ == '__main__':
     machine_config = {'n_processors':2, 
                       'device':'cuda:0' if torch.cuda.is_available() else 'cpu',}
 
+
     # env_id = 'halfcheetah-medium-v2'
     env_id = args.env_id
     print("Env ID:", env_id)
@@ -109,9 +112,14 @@ if __name__ == '__main__':
                     **replay_buffer_params,
                     **bc_params,
                     **td3_params,
-                    'wandb_project':'Policy Stitching',
+                    'wandb_project':'Policy Stitching DEV',
                     'id':str(uuid.uuid4())[:8],
                     }
+    if args.baseline:
+        policy_path = "baseline_file/Hopper-v2_sac_baseline.pt"
+        importer = PackageImporter(policy_path)
+        sac_actor_packaged = importer.load_pickle("actor", "actor.pkl").to(machine_config['device'])
+        config_dict['baseline'] = sac_actor_packaged
 
     config_dict['task'],*config_dict['data_quality'],_ = env_id.split('-')
     config_dict['data_quality'] = '-'.join(config_dict['data_quality'])

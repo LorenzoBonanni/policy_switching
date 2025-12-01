@@ -10,4 +10,4 @@ conda activate rlenv
 cd /home/lbonanni/policy_switching
 
 python main.py --env_id hopper_custom-v2#1000
-python main.py --combined --env_id hopper_custom-v2#1000
+python main.py --combined --baseline --env_id hopper_custom-v2#1000

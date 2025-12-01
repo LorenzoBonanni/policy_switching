@@ -1,5 +1,4 @@
-from rl_algos.single_agent.Combined_agent.agent import Agent
-
+from rl_algos.single_agent.Combined_agent.agent import Agent, AgentBaseline
 from utils.misc import get_dataset, wandb_init
 
 def combined(config_dict):	
@@ -42,11 +41,19 @@ def combined(config_dict):
     config_dict['critic_ensemble_num'] = ensemble_num
     config_dict['actor_ensemble_num'] = ensemble_num
 
-    agent = Agent(obs_dims=env.observation_space.shape[0],
-                  action_dims=env.action_space.shape[0],
-                  dataset=dataset,
-                  **config_dict
-                  )
+    if not config_dict.get('baseline', False):
+        agent = Agent(obs_dims=env.observation_space.shape[0],
+                    action_dims=env.action_space.shape[0],
+                    dataset=dataset,
+                    **config_dict
+                    )
+    else:
+        config_dict['gaussian_bc'] = False
+        agent = AgentBaseline(obs_dims=env.observation_space.shape[0],
+                    action_dims=env.action_space.shape[0],
+                    dataset=dataset,
+                    **config_dict
+                    )
 
 
     if config_dict['offline']:
