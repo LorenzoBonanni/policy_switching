@@ -316,8 +316,12 @@ class AgentBaseline(Agent):
             new_state = state.squeeze(0).squeeze(0)
             
         unnorm_state = new_state * self.replay_buffer.std + self.replay_buffer.mean
+        
+        if isinstance(unnorm_state, np.ndarray):
+            unnorm_state = torch.tensor(unnorm_state, dtype=torch.float).to(device=self.device)
+
         action, *_ = self.baseline.get_action(unnorm_state, deterministic=True)
 
         return {
-            'action': action,
+            'action': action.detach().unsqueeze(0).unsqueeze(0),
         }

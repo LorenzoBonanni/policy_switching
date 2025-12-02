@@ -155,7 +155,7 @@ if __name__ == '__main__':
         agent = combined(config_dict)
         config_dict['num_evals'] = 50
         ret = evaluate(config_dict, agent)
-        algo_name = 'switch'
+        algo_name = 'switch' + ('-baseline' if args.baseline else '')
         out_fname = f"{algo_name}-returns_{ntrj}_{args.seed}.csv"
         df = pd.DataFrame({"return": np.asarray(ret)})
         RESULTS_DIR = os.path.expandvars("$MOREL_OUTPUT_DIR")

@@ -234,7 +234,7 @@ class Agent(BaseActorCritic):
             model_path += ('-'+str(iter_no))
 
         print(f"\nLoading models from {model_path}...")
-        model_checkpoint = torch.load(model_path)
+        model_checkpoint = torch.load(model_path, map_location=torch.device(self.device))
 
         self.actor.load_state_dict(model_checkpoint['actor_state_dict'])
         self.target_actor.load_state_dict(model_checkpoint['target_actor_state_dict'])
