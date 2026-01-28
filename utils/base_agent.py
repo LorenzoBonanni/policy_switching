@@ -73,8 +73,18 @@ class BaseAgent(ABC):
 
             act = self.choose_action(obs, deterministic=True, transform=True)['action']
             act = act.cpu().detach().numpy()
+            act = act.squeeze()
 
-            next_obs, reward, done, trunc, info = env.step(act.squeeze())
+            if 'pendulum' in config_dict['env_id']:
+                # untrasnform action
+                max_val = env.action_space.high[0]
+                min_val = env.action_space.low[0]
+                act = (act + 1) * (max_val - min_val) / 2 + min_val
+
+            if len(act.shape) == 0:
+                act = act[None]
+                
+            next_obs, reward, done, trunc, info = env.step(act)
             dones = done | trunc
             total_reward += reward
             obs = next_obs

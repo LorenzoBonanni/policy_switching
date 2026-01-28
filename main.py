@@ -7,7 +7,7 @@ import gym
 import time, uuid
 from execution_scripts import td3_n_offline, bc_offline, combined
 from torch.package.package_importer import PackageImporter
-
+from gym.wrappers.time_limit import TimeLimit
 from utils.misc import CustomDatasetWrapper
 from utils.plotting_scripts import plot_online_return, plot_online_std
 import argparse
@@ -23,14 +23,25 @@ args = parser.parse_args()
 def evaluate(config_dict, agent):
     env = config_dict['env']
     num_evals = config_dict.get('num_evals', 10)
-
+    env = TimeLimit(env, max_episode_steps=1000)
     returns = []
+    bc_steps_list = []
+    total_steps_list = []
     for _ in range(num_evals):
         total_reward, bc_steps, total_steps = agent._evaluate_performance(env=env, config_dict=config_dict, iteration=None)
         returns.append(total_reward)
+        print(f"Eval Return: {total_reward:.3f}, BC Steps: {bc_steps}, Total Steps: {total_steps}")
+        print("Percent BC Steps:", (bc_steps/total_steps)*100)
+        print("-"*30)
+        bc_steps_list.append(bc_steps)
+        total_steps_list.append(total_steps)
+    
+
     avg_return = np.mean(returns)
     std_return = np.std(returns)
     print(f"Evaluation over {num_evals} episodes: {avg_return:.3f} ± {std_return:.3f}")
+    print(f"Baseline policy used {sum(bc_steps_list)} times out of {sum(total_steps_list)} total actions.")
+    print(f"Baseline usage percentage: {(sum(bc_steps_list)/sum(total_steps_list))*100:.2f}")
     return returns
 
 if __name__ == '__main__':
@@ -75,6 +86,7 @@ if __name__ == '__main__':
 
     # env_id = 'halfcheetah-medium-v2'
     env_id = args.env_id
+    # env_id = "invertedpendulum_custom-v2#10_0"
     print("Env ID:", env_id)
    #env_id = 'antmaze-umaze-diverse-v2'
 
@@ -84,7 +96,9 @@ if __name__ == '__main__':
         task_name = deepcopy(name)
         name_dict = {
             'pendulum_custom-v1': ('Pendulum-v1', 'pendulum-medium-v1'),
-            'hopper_custom-v2': ('Hopper-v2', 'hopper-medium-v2')
+            'hopper_custom-v2': ('Hopper-v2', 'hopper-medium-v2'),
+            'halfcheetah_custom-v2': ('HalfCheetah-v2', 'halfcheetah-medium-v2'),
+            'invertedpendulum_custom-v2': ('InvertedPendulum-v2', 'invertedpendulum-medium-v2')
         }
         env_name, d4rl_name = name_dict[name]
         env = gym.make(env_name)
@@ -112,7 +126,7 @@ if __name__ == '__main__':
                     **replay_buffer_params,
                     **bc_params,
                     **td3_params,
-                    'wandb_project':'Policy Stitching DEV',
+                    'wandb_project':'Policy Stitching',
                     'id':str(uuid.uuid4())[:8],
                     }
     if args.baseline:
@@ -152,15 +166,19 @@ if __name__ == '__main__':
         td3_n_offline(config_dict)
         bc_offline(config_dict)
     else:
+        print("-"*10)
+        print("RUNNING POLICY SWITCH")
         agent = combined(config_dict)
         config_dict['num_evals'] = 50
         ret = evaluate(config_dict, agent)
+
         algo_name = 'switch' + ('-baseline' if args.baseline else '')
-        out_fname = f"{algo_name}-returns_{ntrj}_{args.seed}.csv"
+        out_fname = f"{algo_name}-returns_{ntrj}.csv"
         df = pd.DataFrame({"return": np.asarray(ret)})
         RESULTS_DIR = os.path.expandvars("$MOREL_OUTPUT_DIR")
         os.makedirs(RESULTS_DIR, exist_ok=True)
         df.to_csv(RESULTS_DIR +'/'+ out_fname, index=False)
+        print("Saved Results to ", RESULTS_DIR +'/'+ out_fname)
 
     # # Train Online
     # config_dict['offline'] = False

@@ -161,6 +161,13 @@ class CustomDatasetWrapper(gym.Wrapper):
             data_dict['terminals'] = data_dict['terminals'][:, 0]
         assert data_dict['terminals'].shape == (N_samples,), 'Terminals has wrong shape: %s' % (
             str(data_dict['rewards'].shape))
+
+        if 'invertedpendulum' in self.dataset_path:
+            # normalize actions to [-1, 1]
+            action_high = self.action_space.high
+            action_low = self.action_space.low
+            data_dict['actions'] = 2.0 * (data_dict['actions'] - action_low) / (action_high - action_low) - 1.0
+
         return data_dict
 
         # with h5py.File(self.dataset_path, 'r') as f:

@@ -19,7 +19,7 @@ class Agent(ContinuousBaseAgent):
                                             action_dims=action_dims,
                                             model_info=model_info,
                                             algo_name=algo_name,
-				            min_val=self.min_action_val,
+				                            min_val=self.min_action_val,
                                             max_val=self.max_action_val,
                                             log_std_min=-10)
 

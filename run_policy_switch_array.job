@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=ps_array
-#SBATCH --array=0-20%2                  # <-- set to: (#envs * #seeds) - 1
-#SBATCH --mem 8G
-#SBATCH --cpus-per-gpu 8
+#SBATCH --array=0-14%2                  # <-- set to: (#envs * #seeds) - 1
+#SBATCH --mem 10G
+#SBATCH --cpus-per-gpu 3
 #SBATCH --gres gpu:1
 #SBATCH --partition=long
 
@@ -18,16 +18,12 @@ cd /home/lbonanni/policy_switching
 # 2. Define environments and seeds
 # --------------------------------------------------
 envs=(
-    "hopper_custom-v2#10"
-    "hopper_custom-v2#50"
-    "hopper_custom-v2#100"
-    "hopper_custom-v2#500"
-    "hopper_custom-v2#1000"
-    "hopper_custom-v2#2000"
-    "hopper_custom-v2#5000"
+    "invertedpendulum_custom-v2#10"
+    "invertedpendulum_custom-v2#500"
+    "invertedpendulum_custom-v2#5000"
 )
 
-seeds=(0 1 2)
+seeds=(0 1 2 3 4)
 
 num_envs=${#envs[@]}
 num_seeds=${#seeds[@]}
@@ -40,11 +36,21 @@ task_id=$SLURM_ARRAY_TASK_ID
 env_idx=$(( task_id / num_seeds ))
 seed_idx=$(( task_id % num_seeds ))
 
-export ENV_NAME=${envs[$env_idx]}
-export SEED=${seeds[$seed_idx]}
+export ENV_NAME=${envs[$env_idx]}_${seeds[$seed_idx]}
+export SEED=0
+
+echo "Running PS job:"
+echo "  ENV_NAME = $ENV_NAME"
+echo "  SEED     = $SEED"
+echo "  task_id  = $task_id (env=$env_idx seed=$seed_idx)"
 
 # --------------------------------------------------
 # 4. Run policy switching pipeline
 # --------------------------------------------------
 python main.py --env_id ${ENV_NAME} --seed ${SEED}
+
 python main.py --combined --env_id ${ENV_NAME} --seed ${SEED}
+
+rm -rf models/td3/${ENV_NAME}
+rm -rf models/gaussian_bc/${ENV_NAME}
+wandb sync --clean --clean-old-hours 1 --clean-force

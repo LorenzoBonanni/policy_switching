@@ -114,7 +114,16 @@ class Agent(BaseAgent):
                     critic_value = self.critic(torch_obs,act)
                     critic_std_sum += critic_value.std()
 
-            next_obs, reward, done, trunc, info = env.step(np_act.squeeze())
+            if 'invertedpendulum' in config_dict['task']:
+                # untrasnform action
+                max_val = env.action_space.high[0]
+                min_val = env.action_space.low[0]
+                np_act = (np_act + 1) * (max_val - min_val) / 2 + min_val
+
+            if len(np_act.squeeze().shape) == 0:
+                np_act = np.array([np_act.squeeze()])
+
+            next_obs, reward, done, trunc, info = env.step(np_act)
             dones = done | trunc
             total_reward += reward
 

@@ -9,5 +9,5 @@ conda deactivate
 conda activate rlenv
 cd /home/lbonanni/policy_switching
 
-python main.py --env_id hopper_custom-v2#10 --seed 2
-python main.py --combined --env_id hopper_custom-v2#10 --seed 2
+python main.py --env_id hopper_custom-v2#10_0
+python main.py --combined --env_id hopper_custom-v2#10_0
