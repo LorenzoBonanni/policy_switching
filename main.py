@@ -1,3 +1,8 @@
+from utils.compat import apply_runtime_compat_patches, ensure_d4rl_registered
+
+apply_runtime_compat_patches()
+
+
 from copy import deepcopy
 import os
 import pandas as pd
@@ -14,7 +19,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--combined', action='store_true', help='If set, run combined training')
-parser.add_argument('--env_id', type=str, default='hopper_custom-v2#10', help='Environment ID')
+parser.add_argument('--env_id', type=str, default='hopper_custom-v2#10_0', help='Environment ID')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 parser.add_argument('--baseline', action='store_true', help='If set, use baseline policy')
 
@@ -90,21 +95,27 @@ if __name__ == '__main__':
     print("Env ID:", env_id)
    #env_id = 'antmaze-umaze-diverse-v2'
 
+    task_name = ""
     if 'custom' in env_id:
         # hopper_custom-v2#10
         name, ntrj = env_id.split('#')
         task_name = deepcopy(name)
         name_dict = {
-            'pendulum_custom-v1': ('Pendulum-v1', 'pendulum-medium-v1'),
             'hopper_custom-v2': ('Hopper-v2', 'hopper-medium-v2'),
             'halfcheetah_custom-v2': ('HalfCheetah-v2', 'halfcheetah-medium-v2'),
-            'invertedpendulum_custom-v2': ('InvertedPendulum-v2', 'invertedpendulum-medium-v2')
+            'invertedpendulum_custom-v2': ('InvertedPendulum-v2', 'invertedpendulum-medium-v2'),
+            'walker2d_custom-v2': ('Walker2d-v2', 'walker2d-medium-v2'),
         }
         env_name, d4rl_name = name_dict[name]
+        task_name = env_name.split('_')[0]
         env = gym.make(env_name)
+        print("===="*20)
+        print(f'{os.environ.get("D4RL_DATASET_DIR")}/datasets/{env_name}_dataset_{ntrj}.hdf5')
+        print("===="*20)
+        # hopper_custom-v2_dataset_2000_7.hdf5
         env = CustomDatasetWrapper(
             env,
-            f'{os.environ.get("D4RL_DATASET_DIR")}/datasets/{task_name}_dataset_{ntrj}.hdf5',
+            f'{os.environ.get("D4RL_DATASET_DIR")}/datasets/{name}_dataset_{ntrj}.hdf5',
             d4rl_name
         )
     else:
@@ -177,8 +188,9 @@ if __name__ == '__main__':
         df = pd.DataFrame({"return": np.asarray(ret)})
         RESULTS_DIR = os.path.expandvars("$MOREL_OUTPUT_DIR")
         os.makedirs(RESULTS_DIR, exist_ok=True)
-        df.to_csv(RESULTS_DIR +'/'+ out_fname, index=False)
-        print("Saved Results to ", RESULTS_DIR +'/'+ out_fname)
+        os.makedirs(RESULTS_DIR +'/'+ task_name, exist_ok=True)
+        df.to_csv(RESULTS_DIR +'/'+ task_name + '/'+ out_fname, index=False)
+        print("Saved Results to ", RESULTS_DIR +'/'+ task_name + '/'+ out_fname)
 
     # # Train Online
     # config_dict['offline'] = False

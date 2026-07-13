@@ -178,3 +178,4 @@ online_plots/*
 wandb/
 .vscode/*
 *.out
+.devcontainer/
