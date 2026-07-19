@@ -1,21 +1,25 @@
 from utils.compat import apply_runtime_compat_patches, ensure_d4rl_registered
 
-apply_runtime_compat_patches()
-
-
+# torch must load before apply_runtime_compat_patches() runs, since that
+# call is what pulls in gym/d4rl (and therefore mujoco-py's OSMesa/LLVM
+# backend) internally — same import-order fix as run_bc.py.
 from copy import deepcopy
 import os
+import time, uuid
+import argparse
+
+import numpy as np
 import pandas as pd
 import torch
-import numpy as np
-import gym
-import time, uuid
-from execution_scripts import td3_n_offline, bc_offline, combined
 from torch.package.package_importer import PackageImporter
+
+apply_runtime_compat_patches()   # safe now — torch is already loaded
+
+import gym
 from gym.wrappers.time_limit import TimeLimit
+from execution_scripts import td3_n_offline, bc_offline, combined
 from utils.misc import CustomDatasetWrapper
 from utils.plotting_scripts import plot_online_return, plot_online_std
-import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--combined', action='store_true', help='If set, run combined training')

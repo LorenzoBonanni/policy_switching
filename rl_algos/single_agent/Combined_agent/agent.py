@@ -122,6 +122,8 @@ class Agent(BaseAgent):
 
             if len(np_act.squeeze().shape) == 0:
                 np_act = np.array([np_act.squeeze()])
+            if not np_act.shape == env.action_space.shape:
+                np_act = np_act.squeeze()
 
             next_obs, reward, done, trunc, info = env.step(np_act)
             dones = done | trunc

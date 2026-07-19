@@ -4,10 +4,10 @@
 #SBATCH --cpus-per-gpu 8
 #SBATCH --gres gpu:1
 #SBATCH --partition long
-source /home/lbonanni/miniconda3/etc/profile.d/conda.sh
-conda deactivate
-conda activate rlenv
-cd /home/lbonanni/policy_switching
+# source /home/lbonanni/miniconda3/etc/profile.d/conda.sh
+# conda deactivate
+# conda activate rlenv
+# cd /home/lbonanni/policy_switching
 
-python main.py --env_id hopper_custom-v2#10_0
-python main.py --combined --env_id hopper_custom-v2#10_0
+python main.py --env_id hopper_custom-v2#10_0 --seed 0
+python main.py --combined --env_id hopper_custom-v2#10_0 --seed 0
